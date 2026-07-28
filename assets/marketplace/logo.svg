@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="144" y2="144" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#16463F"/>
+      <stop offset="1" stop-color="#0D2E29"/>
+    </linearGradient>
+  </defs>
+
+  <!-- chiclet background -->
+  <rect x="0" y="0" width="144" height="144" rx="32" fill="url(#bg)"/>
+
+  <!-- back field capsule (the original field) -->
+  <g transform="rotate(-12 56 64)">
+    <rect x="17" y="48" width="78" height="32" rx="16" fill="#EDE6D3" opacity="0.42"/>
+  </g>
+
+  <!-- front field capsule (the duplicate) -->
+  <g transform="rotate(-12 88 82)">
+    <rect x="49" y="66" width="78" height="32" rx="16" fill="#F7F3E6"/>
+    <rect x="70" y="76" width="4" height="12" rx="2" fill="#123C39"/>
+    <rect x="80" y="76" width="4" height="12" rx="2" fill="#123C39"/>
+    <rect x="90" y="76" width="4" height="12" rx="2" fill="#123C39"/>
+  </g>
+
+  <!-- alert badge flagging the collision -->
+  <circle cx="108" cy="50" r="15" fill="#0D2E29"/>
+  <circle cx="108" cy="50" r="12.5" fill="#E8A33D"/>
+  <rect x="106" y="43" width="4" height="8" rx="2" fill="#123C39"/>
+  <circle cx="108" cy="56" r="2" fill="#123C39"/>
+</svg>

@@ -1,0 +1,35 @@
+modules:
+  jira:adminPage:
+    - key: fieldwatch-admin-page
+      resource: main
+      resolver:
+        function: resolver
+      render: native
+      title: Field Hygiene for Jira
+  scheduledTrigger:
+    - key: field-hygiene-daily-snapshot
+      function: dailySnapshotTrigger
+      interval: day
+      filter:
+        appIsLicensed: true
+  function:
+    - key: resolver
+      handler: index.handler
+    - key: dailySnapshotTrigger
+      handler: index.dailySnapshotTrigger
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+permissions:
+  scopes:
+    - read:jira-work
+    - manage:jira-configuration
+    - storage:app
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/8827e833-c6fa-4752-bb8c-f15c53f66c83
+  licensing:
+    enabled: true

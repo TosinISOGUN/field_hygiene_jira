@@ -1,0 +1,25 @@
+{
+  "name": "fieldwatch",
+  "title": "Field Hygiene for Jira",
+  "description": "One admin page that surfaces duplicate, unused, and mismatched custom fields in Jira before they become clutter.",
+  "link": "https://developer.atlassian.com/platform/forge/manifest-reference/modules/jira-admin-page/",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "lint": "eslint src/**/*"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0"
+  },
+  "dependencies": {
+    "@forge/api": "8.0.1",
+    "@forge/bridge": "6.1.1-next.8",
+    "@forge/kvs": "2.0.2",
+    "@forge/react": "12.1.0-next.3",
+    "@forge/resolver": "2.0.0",
+    "react": "^18.2.0"
+  }
+}
