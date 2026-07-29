@@ -385,23 +385,22 @@ const App = () => {
           </Stack>
         </SectionMessage>
       )}
-      <Inline space="space.400" shouldWrap>
-        <Box>
-          <Text size="small">Duplicate groups</Text>
-          <Heading size="large">{result.collisions.length}</Heading>
-        </Box>
-        <Box>
-          <Text size="small">Possible duplicates</Text>
-          <Heading size="large">{result.possibleDuplicates.length}</Heading>
-        </Box>
-        <Box>
-          <Text size="small">Unused fields</Text>
-          <Heading size="large">{result.unusedFields.length}</Heading>
-        </Box>
-        <Box>
-          <Text size="small">Missing descriptions</Text>
-          <Heading size="large">{result.fieldsMissingDescription.length}</Heading>
-        </Box>
+      <Inline space="space.200" shouldWrap>
+        {[
+          { label: 'Duplicate groups', value: result.collisions.length },
+          { label: 'Possible duplicates', value: result.possibleDuplicates.length },
+          { label: 'Unused fields', value: result.unusedFields.length },
+          { label: 'Missing descriptions', value: result.fieldsMissingDescription.length },
+        ].map((stat, index) => (
+          <Box
+            key={stat.label}
+            backgroundColor={index % 2 === 0 ? 'color.background.neutral' : 'color.background.accent.blue.subtlest'}
+            padding="space.200"
+          >
+            <Text size="small">{stat.label}</Text>
+            <Heading size="large">{stat.value}</Heading>
+          </Box>
+        ))}
       </Inline>
       <Text>Use the tabs above to see the detail behind each number.</Text>
     </Stack>
