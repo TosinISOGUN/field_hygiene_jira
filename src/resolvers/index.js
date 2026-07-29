@@ -167,6 +167,16 @@ function findUnusedFields(fields) {
   return unused;
 }
 
+// description is a top-level, always-present property on the Field schema —
+// not gated behind expand (confirmed against the OpenAPI spec's parameter
+// list for /field/search). No extra API call: rides along on the same field
+// list fetchAllCustomFields() already collects.
+function findFieldsMissingDescription(fields) {
+  return fields
+    .filter((field) => !field.description || field.description.trim() === '')
+    .map((field) => ({ id: field.id, name: field.name, type: field.schema?.type }));
+}
+
 // Loops GET /rest/api/3/project/search. style: 'classic' | 'next-gen' and
 // simplified come back by default, no expand needed.
 async function fetchProjects() {
@@ -377,6 +387,7 @@ resolver.define('getFieldCollisions', async () => {
       collisions: [],
       possibleDuplicates: [],
       unusedFields: [],
+      fieldsMissingDescription: [],
       schemeGuardrails: [],
       teamManagedGuardrails: [],
       guardrailError: null,
@@ -389,6 +400,7 @@ resolver.define('getFieldCollisions', async () => {
   const collisions = groupCollisions(unlockedFields);
   const possibleDuplicates = findPossibleDuplicates(unlockedFields, collisions);
   const unusedFields = findUnusedFields(unlockedFields);
+  const fieldsMissingDescription = findFieldsMissingDescription(unlockedFields);
 
   let schemeGuardrails = [];
   let teamManagedGuardrails = [];
@@ -408,6 +420,7 @@ resolver.define('getFieldCollisions', async () => {
     collisions,
     possibleDuplicates,
     unusedFields,
+    fieldsMissingDescription,
     schemeGuardrails,
     teamManagedGuardrails,
     guardrailError,

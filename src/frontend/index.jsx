@@ -15,6 +15,7 @@ import ForgeReconciler, {
   HorizontalBarChart,
   LineChart,
   Button,
+  TextArea,
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
 
@@ -75,10 +76,57 @@ const TREND_METRIC_LABEL = {
   possibleDuplicatesCount: 'Possible duplicates',
 };
 
+// Pure formatting over the already-fetched scan result — no API call. Used
+// by the Export panel's read-only TextArea; the admin copies this manually
+// since UI Kit native has no clipboard-write or file-download API.
+function buildReportText(result) {
+  const sections = [];
+
+  if (result.collisions.length > 0) {
+    const rows = result.collisions.flatMap((collision) =>
+      collision.fields.map((field) => `${field.name},${field.type},${field.id}`)
+    );
+    sections.push(['Duplicate names found', 'Name,Type,Field ID', ...rows].join('\n'));
+  }
+
+  if (result.possibleDuplicates.length > 0) {
+    const rows = result.possibleDuplicates.map(
+      (pair) =>
+        `${pair.fieldA.name},${pair.fieldB.name},${Math.round(pair.similarity * 100)}%`
+    );
+    sections.push(['Possible duplicates', 'Field A,Field B,Similarity', ...rows].join('\n'));
+  }
+
+  if (result.unusedFields.length > 0) {
+    const rows = result.unusedFields.map(
+      (field) => `${field.name},${field.type},${UNUSED_REASON_LABEL[field.reason]}`
+    );
+    sections.push(['Unused fields', 'Name,Type,Reason', ...rows].join('\n'));
+  }
+
+  if (result.fieldsMissingDescription.length > 0) {
+    const rows = result.fieldsMissingDescription.map(
+      (field) => `${field.name},${field.type},${field.id}`
+    );
+    sections.push(['Missing descriptions', 'Name,Type,Field ID', ...rows].join('\n'));
+  }
+
+  const guardrailRows = [
+    ...result.schemeGuardrails.map((g) => `${g.schemeName},${g.fieldsCount},${g.limit}`),
+    ...result.teamManagedGuardrails.map((g) => `${g.projectName},${g.fieldsCount},${g.limit}`),
+  ];
+  if (guardrailRows.length > 0) {
+    sections.push(['Field limits', 'Name,Fields,Limit', ...guardrailRows].join('\n'));
+  }
+
+  return sections.join('\n\n');
+}
+
 const App = () => {
   const [result, setResult] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [trends, setTrends] = useState(null);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   const scan = () => {
     setIsScanning(true);
@@ -121,6 +169,29 @@ const App = () => {
       </Stack>
     );
   }
+
+  const exportButton = (
+    <Button onClick={() => setIsExportOpen((open) => !open)}>
+      {isExportOpen ? 'Hide export' : 'Export'}
+    </Button>
+  );
+
+  // Read-only, monospaced text the admin selects and copies manually — UI
+  // Kit native has no clipboard-write or file-download API, so this is the
+  // real ceiling for "export" today. See prompts/report-export.md.
+  const exportPanel = isExportOpen && (
+    <Stack space="space.100">
+      <SectionMessage appearance="information">
+        <Text>Click inside the box, select all (Ctrl/Cmd+A), and copy (Ctrl/Cmd+C).</Text>
+      </SectionMessage>
+      <TextArea
+        isReadOnly
+        isMonospaced
+        value={buildReportText(result)}
+        rows={12}
+      />
+    </Stack>
+  );
 
   // Combined, sorted by how close each scheme/project is to its own limit —
   // company-managed schemes and team-managed projects are different limit
@@ -225,16 +296,21 @@ const App = () => {
   const hasAnySignal =
     result.collisions.length > 0 ||
     result.possibleDuplicates.length > 0 ||
-    result.unusedFields.length > 0;
+    result.unusedFields.length > 0 ||
+    result.fieldsMissingDescription.length > 0;
 
   if (!hasAnySignal) {
     return (
       <Stack space="space.300" alignInline="center">
         <EmptyState
           header="No issues found"
-          description={`Checked ${result.totalCustomFields} custom fields — no duplicates, near-duplicates, or unused fields.`}
+          description={`Checked ${result.totalCustomFields} custom fields — no duplicates, near-duplicates, unused fields, or missing descriptions.`}
         />
-        {rescanButton}
+        <Inline space="space.100">
+          {rescanButton}
+          {exportButton}
+        </Inline>
+        {exportPanel}
         {guardrailSection}
         {trendsSection}
       </Stack>
@@ -268,8 +344,12 @@ const App = () => {
     <Stack space="space.300">
       <Inline space="space.100" alignBlock="center" spread="space-between">
         <Heading size="large">Field scan results</Heading>
-        {rescanButton}
+        <Inline space="space.100">
+          {rescanButton}
+          {exportButton}
+        </Inline>
       </Inline>
+      {exportPanel}
 
       {result.collisions.length > 0 && (
         <Stack space="space.300">
@@ -365,6 +445,17 @@ const App = () => {
         </Stack>
       )}
 
+      {result.fieldsMissingDescription.length > 0 && (
+        <Stack space="space.150">
+          <Heading size="medium">Missing descriptions</Heading>
+          <Text>
+            No description set — a common reason admins can't tell fields apart and create a
+            duplicate instead of reusing one.
+          </Text>
+          <DynamicTable head={tableHead} rows={fieldRows(result.fieldsMissingDescription)} />
+        </Stack>
+      )}
+
       {guardrailSection}
       {trendsSection}
     </Stack>
@@ -373,6 +464,8 @@ const App = () => {
 
 ForgeReconciler.render(
   <React.StrictMode>
-    <App />
+    <Box paddingBlockEnd="space.400">
+      <App />
+    </Box>
   </React.StrictMode>
 );
