@@ -1,7 +1,7 @@
 # Marketplace screenshot capture guide
 
 Reference doc for capturing the Rule-of-3 highlight screenshots required by the Marketplace
-listing. Specs verified against current Atlassian docs 2026-07-30
+listing. Specs verified against current Atlassian docs 2026-07-29
 (`developer.atlassian.com/platform/marketplace/building-your-presence-on-marketplace/`) —
 not assumed from memory.
 
