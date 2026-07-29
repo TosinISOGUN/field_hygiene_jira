@@ -18,6 +18,10 @@ import ForgeReconciler, {
   TextArea,
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
+// Subpath import, distinct from the main @forge/react import above — see
+// prompts/route-split.md. Router is a Preview feature per Atlassian's docs
+// (shorter deprecation windows than stable APIs), checked before using it.
+import { Router, Route, useNavigate, useLocation } from '@forge/react/router';
 
 const tableHead = {
   cells: [
@@ -121,6 +125,34 @@ function buildReportText(result) {
 
   return sections.join('\n\n');
 }
+
+const NAV_ITEMS = [
+  { path: '/', label: 'Overview' },
+  { path: '/duplicates', label: 'Duplicates' },
+  { path: '/cleanup', label: 'Cleanup' },
+  { path: '/limits', label: 'Field limits' },
+  { path: '/trends', label: 'Trends' },
+];
+
+// Rendered as a child of <Router> (not App itself) — useNavigate/useLocation
+// only work in a descendant of Router, not an ancestor that merely renders one.
+const AppNav = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  return (
+    <Inline space="space.100">
+      {NAV_ITEMS.map((item) => (
+        <Button
+          key={item.path}
+          isSelected={location.pathname === item.path}
+          onClick={() => navigate(item.path)}
+        >
+          {item.label}
+        </Button>
+      ))}
+    </Inline>
+  );
+};
 
 const App = () => {
   const [result, setResult] = useState(null);
@@ -299,23 +331,11 @@ const App = () => {
     result.unusedFields.length > 0 ||
     result.fieldsMissingDescription.length > 0;
 
-  if (!hasAnySignal) {
-    return (
-      <Stack space="space.300" alignInline="center">
-        <EmptyState
-          header="No issues found"
-          description={`Checked ${result.totalCustomFields} custom fields — no duplicates, near-duplicates, unused fields, or missing descriptions.`}
-        />
-        <Inline space="space.100">
-          {rescanButton}
-          {exportButton}
-        </Inline>
-        {exportPanel}
-        {guardrailSection}
-        {trendsSection}
-      </Stack>
-    );
-  }
+  // "Needs attention" on Overview — the dangerous/urgent subset of what's
+  // already computed above, not a new scan or new data source.
+  const typeMismatchCollisions = result.collisions.filter((c) => c.hasTypeMismatch);
+  const nearLimitGuardrails = guardrailRows.filter((row) => row.fieldsCount / row.limit >= 0.8);
+  const needsAttention = typeMismatchCollisions.length > 0 || nearLimitGuardrails.length > 0;
 
   const affectedFieldCount = result.collisions.reduce(
     (total, collision) => total + collision.fields.length,
@@ -340,17 +360,55 @@ const App = () => {
     colorGroup: index % 2 === 0 ? 'a' : 'b',
   }));
 
-  return (
+  const overviewContent = !hasAnySignal && !needsAttention ? (
+    <EmptyState
+      header="No issues found"
+      description={`Checked ${result.totalCustomFields} custom fields — no duplicates, near-duplicates, unused fields, or missing descriptions, and no field-limit warnings.`}
+    />
+  ) : (
     <Stack space="space.300">
-      <Inline space="space.100" alignBlock="center" spread="space-between">
-        <Heading size="large">Field scan results</Heading>
-        <Inline space="space.100">
-          {rescanButton}
-          {exportButton}
-        </Inline>
+      {needsAttention && (
+        <SectionMessage appearance="warning" title="Needs attention">
+          <Stack space="space.100">
+            {typeMismatchCollisions.map((collision) => (
+              <Text key={collision.normalizedName}>
+                Type mismatch: <Text weight="bold">{collision.fields[0].name}</Text> has fields
+                of different types sharing this name.
+              </Text>
+            ))}
+            {nearLimitGuardrails.map((row) => (
+              <Text key={row.key}>
+                Near limit: <Text weight="bold">{row.name}</Text> is at {row.fieldsCount} of{' '}
+                {row.limit} fields.
+              </Text>
+            ))}
+          </Stack>
+        </SectionMessage>
+      )}
+      <Inline space="space.400" shouldWrap>
+        <Box>
+          <Text size="small">Duplicate groups</Text>
+          <Heading size="large">{result.collisions.length}</Heading>
+        </Box>
+        <Box>
+          <Text size="small">Possible duplicates</Text>
+          <Heading size="large">{result.possibleDuplicates.length}</Heading>
+        </Box>
+        <Box>
+          <Text size="small">Unused fields</Text>
+          <Heading size="large">{result.unusedFields.length}</Heading>
+        </Box>
+        <Box>
+          <Text size="small">Missing descriptions</Text>
+          <Heading size="large">{result.fieldsMissingDescription.length}</Heading>
+        </Box>
       </Inline>
-      {exportPanel}
+      <Text>Use the tabs above to see the detail behind each number.</Text>
+    </Stack>
+  );
 
+  const duplicatesContent = (
+    <Stack space="space.300">
       {result.collisions.length > 0 && (
         <Stack space="space.300">
           <Stack space="space.050">
@@ -434,6 +492,17 @@ const App = () => {
         </Stack>
       )}
 
+      {result.collisions.length === 0 && result.possibleDuplicates.length === 0 && (
+        <EmptyState
+          header="No duplicates found"
+          description="No exact or near-duplicate field names in this scan."
+        />
+      )}
+    </Stack>
+  );
+
+  const cleanupContent = (
+    <Stack space="space.300">
       {result.unusedFields.length > 0 && (
         <Stack space="space.150">
           <Heading size="medium">Unused fields</Heading>
@@ -456,9 +525,37 @@ const App = () => {
         </Stack>
       )}
 
-      {guardrailSection}
-      {trendsSection}
+      {result.unusedFields.length === 0 && result.fieldsMissingDescription.length === 0 && (
+        <EmptyState
+          header="Nothing to clean up"
+          description="Every field is attached to a screen, recently active, and has a description."
+        />
+      )}
     </Stack>
+  );
+
+  return (
+    <Router>
+      <Stack space="space.300">
+        <Inline space="space.100" alignBlock="center" spread="space-between">
+          <Heading size="large">Field Hygiene</Heading>
+          <Inline space="space.100">
+            {rescanButton}
+            {exportButton}
+          </Inline>
+        </Inline>
+        {exportPanel}
+        <AppNav />
+
+        <Route path="/">{overviewContent}</Route>
+        <Route path="/duplicates">{duplicatesContent}</Route>
+        <Route path="/cleanup">{cleanupContent}</Route>
+        <Route path="/limits">{guardrailSection || (
+          <EmptyState header="No field-limit data" description="Field-limit information isn't available right now." />
+        )}</Route>
+        <Route path="/trends">{trendsSection || <Text>Loading trends…</Text>}</Route>
+      </Stack>
+    </Router>
   );
 };
 
