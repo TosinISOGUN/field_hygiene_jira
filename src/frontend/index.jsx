@@ -66,13 +66,6 @@ function unusedFieldRows(fields) {
   }));
 }
 
-// Alternates two brand colors per bar so a long list of duplicate-name
-// groups is easier to scan row-by-row, not tied to any data meaning.
-const CHART_COLOR_PALETTE = [
-  { key: 'a', value: '#0052CC' },
-  { key: 'b', value: '#E8A33D' },
-];
-
 const TREND_METRIC_LABEL = {
   totalCustomFields: 'Total custom fields',
   collisionGroups: 'Duplicate groups',
@@ -354,10 +347,9 @@ const App = () => {
     })
     .map(({ collision }) => collision);
 
-  const groupSizeData = sortedCollisions.map((collision, index) => ({
+  const groupSizeData = sortedCollisions.map((collision) => ({
     xAxis: collision.fields[0].name,
     value: collision.fields.length,
-    colorGroup: index % 2 === 0 ? 'a' : 'b',
   }));
 
   const overviewContent = !hasAnySignal && !needsAttention ? (
@@ -434,8 +426,6 @@ const App = () => {
             data={groupSizeData}
             xAccessor="xAxis"
             yAccessor="value"
-            colorAccessor="colorGroup"
-            colorPalette={CHART_COLOR_PALETTE}
             title="Fields per duplicate name"
             height={300}
           />
