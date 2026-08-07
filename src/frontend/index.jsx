@@ -197,11 +197,21 @@ const App = () => {
   }, []);
 
   if (!result) {
+    // Wrapped in <Router> here too, not just the loaded-content return below --
+    // Router initializes its history instance asynchronously via the Forge
+    // bridge, and since App always returns <Router> as its outermost element,
+    // React keeps the same Router instance mounted across the later
+    // spinner-to-content swap rather than mounting it fresh at that exact
+    // moment. Mounting it immediately gives the bridge the whole scan
+    // duration to initialize, instead of racing a "History is not defined"
+    // error against a big simultaneous re-render (observed empirically).
     return (
-      <Stack space="space.200" alignInline="center">
-        <Spinner size="large" />
-        <Text>Scanning fields…</Text>
-      </Stack>
+      <Router>
+        <Stack space="space.200" alignInline="center">
+          <Spinner size="large" />
+          <Text>Scanning fields…</Text>
+        </Stack>
+      </Router>
     );
   }
 
@@ -212,13 +222,17 @@ const App = () => {
   );
 
   if (result.error) {
+    // Same reasoning as the spinner branch above -- keep Router mounted
+    // continuously across this branch too.
     return (
-      <Stack space="space.200" alignInline="start">
-        <SectionMessage appearance="error" title="Couldn't scan fields">
-          <Text>{result.error}</Text>
-        </SectionMessage>
-        {rescanButton}
-      </Stack>
+      <Router>
+        <Stack space="space.200" alignInline="start">
+          <SectionMessage appearance="error" title="Couldn't scan fields">
+            <Text>{result.error}</Text>
+          </SectionMessage>
+          {rescanButton}
+        </Stack>
+      </Router>
     );
   }
 
