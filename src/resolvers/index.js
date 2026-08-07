@@ -309,29 +309,38 @@ async function fetchSchemeGuardrails() {
     fetchSchemeToConfigMapping(),
   ]);
 
+  // Pre-fetch every unique field-configuration's field list once, in parallel,
+  // instead of looping scheme-by-scheme sequentially -- on a site with many
+  // schemes (a shared reviewer/test instance can accumulate dozens from
+  // testing many apps), the old sequential loop risked running past Forge's
+  // 55-second function timeout, which kills the entire invocation, not just
+  // this scan. configFieldIdCache still dedupes configs reused across schemes
+  // (e.g. every scheme mapped to "Default Field Configuration"), so this is
+  // strictly fewer or equal real API calls, just issued concurrently.
   const configFieldIdCache = new Map();
-  const guardrails = [];
+  const allConfigIds = new Set(mappings.map((mapping) => mapping.fieldConfigurationId));
+  await Promise.all(
+    [...allConfigIds].map((configId) => fetchFieldConfigurationFieldIds(configId, configFieldIdCache))
+  );
 
-  for (const scheme of schemes) {
-    const configIds = new Set(
-      mappings
-        .filter((mapping) => mapping.fieldConfigurationSchemeId === scheme.id)
-        .map((mapping) => mapping.fieldConfigurationId)
-    );
+  const guardrails = schemes.map((scheme) => {
+    const configIds = mappings
+      .filter((mapping) => mapping.fieldConfigurationSchemeId === scheme.id)
+      .map((mapping) => mapping.fieldConfigurationId);
 
     const fieldIdSet = new Set();
     for (const configId of configIds) {
-      const ids = await fetchFieldConfigurationFieldIds(configId, configFieldIdCache);
+      const ids = configFieldIdCache.get(configId) || [];
       for (const id of ids) fieldIdSet.add(id);
     }
 
-    guardrails.push({
+    return {
       schemeId: scheme.id,
       schemeName: scheme.name,
       fieldsCount: fieldIdSet.size,
       limit: CLASSIC_SCHEME_FIELD_LIMIT,
-    });
-  }
+    };
+  });
 
   return guardrails;
 }

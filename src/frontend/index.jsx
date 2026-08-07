@@ -155,10 +155,32 @@ const App = () => {
 
   const scan = () => {
     setIsScanning(true);
-    invoke('getFieldCollisions').then((next) => {
-      setResult(next);
-      setIsScanning(false);
-    });
+    invoke('getFieldCollisions')
+      .then((next) => {
+        setResult(next);
+        setIsScanning(false);
+      })
+      .catch((err) => {
+        // invoke() itself can reject (a Forge platform-level timeout, a
+        // dropped connection) separate from the resolver's own caught,
+        // structured error above -- without this, result stays null forever
+        // and the UI is stuck on the "Scanning fields…" spinner permanently.
+        // Reuses the same result.error rendering path below.
+        console.error('getFieldCollisions invoke failed:', err);
+        setResult({
+          collisions: [],
+          possibleDuplicates: [],
+          unusedFields: [],
+          fieldsMissingDescription: [],
+          schemeGuardrails: [],
+          teamManagedGuardrails: [],
+          guardrailError: null,
+          totalCustomFields: 0,
+          error:
+            'Could not load field data. This can happen on a very large site or during a temporary connection issue — try Rescan.',
+        });
+        setIsScanning(false);
+      });
   };
 
   useEffect(scan, []);
@@ -166,7 +188,12 @@ const App = () => {
   // day (the scheduled snapshot), so there's no reason to refetch it every
   // time someone re-runs the live scan.
   useEffect(() => {
-    invoke('getFieldTrends').then(setTrends);
+    invoke('getFieldTrends')
+      .then(setTrends)
+      .catch((err) => {
+        console.error('getFieldTrends invoke failed:', err);
+        setTrends({ snapshots: [] });
+      });
   }, []);
 
   if (!result) {
