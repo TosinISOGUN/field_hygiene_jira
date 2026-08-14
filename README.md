@@ -11,14 +11,14 @@ custom-field sprawl the site accumulates.
 Sold on the [Atlassian Marketplace](https://marketplace.atlassian.com/), paid via Atlassian.
 Built by [Isogun Labs](https://isogunlabs.com/).
 
-![Status](https://img.shields.io/badge/status-awaiting%20approval-C8832A)
+![Status](https://img.shields.io/badge/status-live%20on%20Marketplace-15803D)
 ![Platform](https://img.shields.io/badge/platform-Atlassian%20Forge-0052CC)
 ![Runs on Atlassian](https://img.shields.io/badge/Runs%20on%20Atlassian-yes-15803D)
 ![Version](https://img.shields.io/badge/version-2.1.0-123C39)
 
-**Status:** submitted to the Atlassian Marketplace, **awaiting approval** (resubmitted
-29 July 2026 after fixing an automatic rejection; typical review is 5–10 business days).
-Not yet publicly listed. Full submission history is in `CLAUDE.md`.
+**Status:** live on the [Atlassian Marketplace](https://marketplace.atlassian.com/apps/2905942594)
+(listing turned public 10 August 2026, after resubmission on 29 July 2026 fixed an automatic
+rejection). Full submission history is in `CLAUDE.md`.
 
 ---
 
