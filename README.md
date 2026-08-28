@@ -117,7 +117,7 @@ else it shows is computed fresh, in memory, on every page load.
 
 ### 2.1.0 — July 2026
 - Marketplace submission: fixed an automatic rejection (missing Privacy & Security tab
-  answers), resubmitted, now awaiting approval.
+  answers), resubmitted 29 July 2026, approved and listing turned public 10 August 2026.
 - Marketplace listing assets: logo, composited banner, 3 required Highlight screenshots
   plus 2 extras, all real captures from a live dev site.
 - Fixed a real product bug found while preparing screenshots: the duplicate-fields chart was
